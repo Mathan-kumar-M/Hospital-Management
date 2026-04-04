@@ -1,0 +1,84 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile information",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Firebase Auth UID" },
+        "name": { "type": "string", "description": "Full name" },
+        "email": { "type": "string", "format": "email", "description": "Email address" },
+        "role": { "type": "string", "enum": ["patient", "admin"], "description": "User role" },
+        "phone": { "type": "string", "description": "Phone number" },
+        "photo": { "type": "string", "description": "Profile photo URL" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Account creation timestamp" }
+      },
+      "required": ["uid", "name", "email", "role"]
+    },
+    "Doctor": {
+      "title": "Doctor",
+      "description": "Doctor profile information",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique doctor ID" },
+        "name": { "type": "string", "description": "Doctor's name" },
+        "specialization": { "type": "string", "description": "Medical specialization" },
+        "departmentId": { "type": "string", "description": "Department ID" },
+        "photo": { "type": "string", "description": "Doctor's photo URL" },
+        "bio": { "type": "string", "description": "Doctor's biography" },
+        "rating": { "type": "number", "description": "Average rating" },
+        "availability": { "type": "object", "description": "Weekly availability schedule" }
+      },
+      "required": ["id", "name", "specialization", "departmentId"]
+    },
+    "Department": {
+      "title": "Department",
+      "description": "Hospital department information",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique department ID" },
+        "name": { "type": "string", "description": "Department name" },
+        "icon": { "type": "string", "description": "Lucide icon name" },
+        "description": { "type": "string", "description": "Department description" },
+        "doctorCount": { "type": "integer", "description": "Number of doctors in department" }
+      },
+      "required": ["id", "name", "icon"]
+    },
+    "Appointment": {
+      "title": "Appointment",
+      "description": "Appointment booking information",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique appointment ID" },
+        "patientId": { "type": "string", "description": "Patient user UID" },
+        "doctorId": { "type": "string", "description": "Doctor ID" },
+        "date": { "type": "string", "format": "date", "description": "Appointment date (YYYY-MM-DD)" },
+        "timeSlot": { "type": "string", "description": "Selected time slot" },
+        "status": { "type": "string", "enum": ["pending", "confirmed", "cancelled"], "description": "Appointment status" },
+        "notes": { "type": "string", "description": "Patient notes" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Booking timestamp" }
+      },
+      "required": ["id", "patientId", "doctorId", "date", "timeSlot", "status"]
+    },
+    "Report": {
+      "title": "Report",
+      "description": "Medical report information",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique report ID" },
+        "patientId": { "type": "string", "description": "Patient user UID" },
+        "fileName": { "type": "string", "description": "Name of the file" },
+        "fileUrl": { "type": "string", "description": "URL to the file in storage" },
+        "uploadedAt": { "type": "string", "format": "date-time", "description": "Upload timestamp" }
+      },
+      "required": ["id", "patientId", "fileName", "fileUrl"]
+    }
+  },
+  "firestore": {
+    "/users/{uid}": { "schema": "User", "description": "User profiles" },
+    "/doctors/{doctorId}": { "schema": "Doctor", "description": "Doctor directory" },
+    "/departments/{deptId}": { "schema": "Department", "description": "Hospital departments" },
+    "/appointments/{appId}": { "schema": "Appointment", "description": "Appointment bookings" },
+    "/reports/{reportId}": { "schema": "Report", "description": "Medical reports" }
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "name": "MediCore - Hospital Management Platform",
+  "description": "A comprehensive hospital management system featuring appointment booking, patient dashboards, and admin management with a modern green medical theme.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone",
+    "geolocation"
+  ]
+}

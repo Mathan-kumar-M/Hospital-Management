@@ -1,0 +1,195 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: {uid}
+    // Fields:
+    //   - uid: string (required, immutable) - Firebase Auth UID
+    //   - name: string (required, size: 1-100) - Full name
+    //   - email: string (required, email format) - Email address
+    //   - role: string (required, enum: ['patient', 'admin']) - User role
+    //   - phone: string (optional) - Phone number
+    //   - photo: string (optional, url format) - Profile photo URL
+    //   - createdAt: timestamp (required, immutable) - Account creation timestamp
+    //
+    // Collection: doctors
+    // Document ID: {doctorId}
+    // Fields:
+    //   - id: string (required, immutable) - Unique doctor ID
+    //   - name: string (required, size: 1-100) - Doctor's name
+    //   - specialization: string (required) - Medical specialization
+    //   - departmentId: string (required) - Department ID
+    //   - photo: string (optional, url format) - Doctor's photo URL
+    //   - bio: string (optional, size: 0-2000) - Doctor's biography
+    //   - rating: number (optional, range: 0-5) - Average rating
+    //   - availability: map (optional) - Weekly availability schedule
+    //
+    // Collection: departments
+    // Document ID: {deptId}
+    // Fields:
+    //   - id: string (required, immutable) - Unique department ID
+    //   - name: string (required, size: 1-100) - Department name
+    //   - icon: string (required) - Lucide icon name
+    //   - description: string (optional, size: 0-1000) - Department description
+    //   - doctorCount: number (optional, positive) - Number of doctors in department
+    //
+    // Collection: appointments
+    // Document ID: {appId}
+    // Fields:
+    //   - id: string (required, immutable) - Unique appointment ID
+    //   - patientId: string (required, immutable) - Patient user UID
+    //   - doctorId: string (required, immutable) - Doctor ID
+    //   - date: string (required, format: YYYY-MM-DD) - Appointment date
+    //   - timeSlot: string (required) - Selected time slot
+    //   - status: string (required, enum: ['pending', 'confirmed', 'cancelled']) - Appointment status
+    //   - notes: string (optional, size: 0-1000) - Patient notes
+    //   - createdAt: timestamp (required, immutable) - Booking timestamp
+    //
+    // Collection: reports
+    // Document ID: {reportId}
+    // Fields:
+    //   - id: string (required, immutable) - Unique report ID
+    //   - patientId: string (required, immutable) - Patient user UID
+    //   - fileName: string (required, size: 1-255) - Name of the file
+    //   - fileUrl: string (required, url format) - URL to the file in storage
+    //   - uploadedAt: timestamp (required, immutable) - Upload timestamp
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+          request.auth.token.email == "kumarmathan2206@gmail.com");
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isValidUrl(url) {
+      return url is string && (url.matches("^https://.*") || url.matches("^http://.*"));
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function areImmutableFieldsUnchanged(fields) {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(fields);
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidUser(data) {
+      return data.uid is string && data.uid.size() > 0 &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+             isValidEmail(data.email) &&
+             data.role in ['patient', 'admin'] &&
+             (!('phone' in data) || data.phone is string) &&
+             (!('photo' in data) || isValidUrl(data.photo)) &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidDoctor(data) {
+      return data.id is string && data.id.size() > 0 &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+             data.specialization is string &&
+             data.departmentId is string &&
+             (!('photo' in data) || isValidUrl(data.photo)) &&
+             (!('bio' in data) || (data.bio is string && data.bio.size() <= 2000)) &&
+             (!('rating' in data) || (data.rating is number && data.rating >= 0 && data.rating <= 5)) &&
+             (!('experience' in data) || (data.experience is string)) &&
+             (!('availability' in data) || (data.availability is list));
+    }
+
+    function isValidDepartment(data) {
+      return data.id is string && data.id.size() > 0 &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+             data.icon is string &&
+             (!('description' in data) || (data.description is string && data.description.size() <= 1000)) &&
+             (!('doctorCount' in data) || (data.doctorCount is number && data.doctorCount >= 0)) &&
+             (!('image' in data) || isValidUrl(data.image));
+    }
+
+    function isValidAppointment(data) {
+      return (!('id' in data) || (data.id is string && data.id.size() > 0)) &&
+             data.patientId is string &&
+             data.doctorId is string &&
+             data.date is string && data.date.matches("^\\d{4}-\\d{2}-\\d{2}$") &&
+             data.timeSlot is string &&
+             data.status in ['pending', 'confirmed', 'cancelled'] &&
+             (!('notes' in data) || (data.notes is string && data.notes.size() <= 1000)) &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidReport(data) {
+      return data.id is string && data.id.size() > 0 &&
+             data.patientId is string &&
+             data.fileName is string && data.fileName.size() > 0 && data.fileName.size() <= 255 &&
+             isValidUrl(data.fileUrl) &&
+             data.uploadedAt is timestamp;
+    }
+
+    // ===============================================================
+    // Collection Rules
+    // ===============================================================
+
+    match /users/{uid} {
+      allow read: if isOwner(uid) || isAdmin();
+      allow create: if isAuthenticated() && isValidUser(request.resource.data) && 
+                      (isOwner(uid) && request.resource.data.role == 'patient' || isAdmin());
+      allow update: if isAuthenticated() && isValidUser(request.resource.data) && 
+                      ((isOwner(uid) && request.resource.data.role == resource.data.role) || isAdmin()) &&
+                      areImmutableFieldsUnchanged(['uid', 'createdAt']);
+    }
+
+    match /doctors/{doctorId} {
+      allow read: if true; // Publicly readable
+      allow write: if isAdmin() && isValidDoctor(request.resource.data);
+    }
+
+    match /departments/{deptId} {
+      allow read: if true; // Publicly readable
+      allow write: if isAdmin() && isValidDepartment(request.resource.data);
+    }
+
+    match /appointments/{appId} {
+      allow read: if isAuthenticated() && (isOwner(resource.data.patientId) || isAdmin());
+      allow create: if isAuthenticated() && isValidAppointment(request.resource.data) && 
+                      (isOwner(request.resource.data.patientId) || isAdmin());
+      allow update: if isAuthenticated() && isValidAppointment(request.resource.data) && 
+                      (isOwner(resource.data.patientId) || isAdmin()) &&
+                      areImmutableFieldsUnchanged(['id', 'patientId', 'doctorId', 'createdAt']);
+      allow delete: if isAdmin();
+    }
+
+    match /reports/{reportId} {
+      allow read: if isAuthenticated() && (isOwner(resource.data.patientId) || isAdmin());
+      allow create: if isAuthenticated() && isValidReport(request.resource.data) && 
+                      (isOwner(request.resource.data.patientId) || isAdmin());
+      allow update: if isAuthenticated() && isValidReport(request.resource.data) && 
+                      (isOwner(resource.data.patientId) || isAdmin()) &&
+                      areImmutableFieldsUnchanged(['id', 'patientId', 'uploadedAt']);
+      allow delete: if isAuthenticated() && (isOwner(resource.data.patientId) || isAdmin());
+    }
+  }
+}
