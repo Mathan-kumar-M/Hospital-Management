@@ -2,6 +2,9 @@ import express from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
 import { fileURLToPath } from "url";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -19,14 +22,22 @@ async function startServer() {
 
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
+    console.log("Running in development mode...");
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
     });
     app.use(vite.middlewares);
   } else {
-    const distPath = path.join(process.cwd(), 'dist');
-    app.use(express.static(distPath));
+    console.log("Running in production mode...");
+    const distPath = path.resolve(__dirname, 'dist');
+    
+    // Serve static files from the dist directory
+    app.use(express.static(distPath, {
+      index: false, // Don't serve index.html automatically here
+    }));
+
+    // For all other routes, serve the index.html
     app.get('*', (req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
     });

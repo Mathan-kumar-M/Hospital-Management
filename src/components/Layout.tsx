@@ -5,6 +5,7 @@ import { auth } from "../firebase";
 import { signOut } from "firebase/auth";
 import { Stethoscope, User as UserIcon, LogOut, Menu, X, ShieldCheck } from "lucide-react";
 import { cn } from "../lib/utils";
+import AIAssistant from "./AIAssistant";
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading, isAdmin } = useAuth();
@@ -41,7 +42,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                   <Stethoscope className="w-6 h-6" />
                 </div>
                 <span className="text-2xl font-bold text-slate-900 tracking-tight">
-                  Medi<span className="text-green-600">Core</span>
+                  Maddy <span className="text-green-600">Medicore</span>
                 </span>
               </Link>
             </div>
@@ -160,6 +161,8 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         {children}
       </main>
 
+      <AIAssistant />
+
       {/* Footer */}
       <footer className="bg-slate-900 text-slate-300 pt-16 pb-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -170,7 +173,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                   <Stethoscope className="w-5 h-5" />
                 </div>
                 <span className="text-xl font-bold text-white tracking-tight">
-                  Medi<span className="text-green-500">Core</span>
+                  Maddy <span className="text-green-500">Medicore</span>
                 </span>
               </Link>
               <p className="text-slate-400 leading-relaxed mb-6">
@@ -210,7 +213,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           </div>
           
           <div className="pt-8 border-t border-slate-800 flex flex-col md:flex-row justify-between items-center text-sm text-slate-500">
-            <p>&copy; {new Date().getFullYear()} MediCore Hospital. All rights reserved.</p>
+            <p>&copy; {new Date().getFullYear()} Maddy Medicore. All rights reserved.</p>
             <div className="flex space-x-6 mt-4 md:mt-0">
               <a href="#" className="hover:text-slate-300">Privacy Policy</a>
               <a href="#" className="hover:text-slate-300">Terms of Service</a>
